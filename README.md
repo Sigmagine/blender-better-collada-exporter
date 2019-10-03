@@ -15,6 +15,7 @@ Same original features as "Better" Collada exporter with some modifications :
 
 - Compatible with Blender 2.8+ (Thanks to [Artell's](https://github.com/artellblender/collada-exporter-2.8) work)
 - Support Principled BSDF (only)
+- Options to export only some objects (visible, selected, in active layer)
 
 ### Material features
 
@@ -22,7 +23,7 @@ Same original features as "Better" Collada exporter with some modifications :
 - Diffuse/base color (color/texture)
 - Specular (value)
 - Reflective/metallic (value/texture)
-- Transparency/alpha (value)
+- Transparency/alpha (value/texture)
 - Indice of refraction (value)
 - Backface culling/double sided (value)
 - Normal map (texture)

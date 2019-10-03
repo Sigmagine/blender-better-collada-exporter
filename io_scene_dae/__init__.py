@@ -20,161 +20,183 @@ from bpy.props import StringProperty, BoolProperty, FloatProperty, EnumProperty
 
 from bpy_extras.io_utils import ExportHelper
 bl_info = {
-    "name": "Better Collada Exporter (SMG)",
-    "author": "Juan Linietsky, artell, Samuel Tranchet from Sigmagine",
+	"name": "Better Collada Exporter (SMG)",
+	"author": "Juan Linietsky, artell, Samuel Tranchet from Sigmagine",
 	"version": (1, 10, 11),
-    "blender": (2, 80, 0),
-    "api": 38691,
-    "location": "File > Import-Export",
-    "description": ("Export DAE Scenes. This plugin actually works better! "
-                    "Originally developped by Godot Engine community."),
-    "warning": "",
-    "wiki_url": ("https://godotengine.org"),
-    "tracker_url": "https://github.com/Sigmagine/blender-better-collada-exporter",
-    "support": "OFFICIAL",
-    "category": "Import-Export"}
+	"blender": (2, 80, 0),
+	"api": 38691,
+	"location": "File > Import-Export",
+	"description": ("Export DAE Scenes. This plugin actually works better! "
+					"Originally developped by Godot Engine community."),
+	"warning": "",
+	"wiki_url": ("https://godotengine.org"),
+	"tracker_url": "https://github.com/Sigmagine/blender-better-collada-exporter",
+	"support": "OFFICIAL",
+	"category": "Import-Export"}
 
 if "bpy" in locals():
-    import imp
-    if "export_dae" in locals():
-        imp.reload(export_dae)  # noqa
+	import imp
+	if "export_dae" in locals():
+		imp.reload(export_dae)  # noqa
 
 
 class CE_OT_export_dae(bpy.types.Operator, ExportHelper):
-    """Selection to DAE"""
-    bl_idname = "export_scene.dae"
-    bl_label = "Export DAE"
-    bl_options = {"PRESET"}
+	"""Selection to DAE"""
+	bl_idname = "export_scene.dae"
+	bl_label = "Export DAE"
+	bl_options = {"PRESET"}
 
-    filename_ext = ".dae"
-    filter_glob : StringProperty(default="*.dae", options={"HIDDEN"})
+	filename_ext = ".dae"
+	filter_glob : StringProperty(default="*.dae", options={"HIDDEN"})
 
-    # List of operator properties, the attributes will be assigned
-    # to the class instance from the operator settings before calling
-    object_types : EnumProperty(
-        name="Object Types",
-        options={"ENUM_FLAG"},
-        items=(("EMPTY", "Empty", ""),
-               ("CAMERA", "Camera", ""),
-               ("LAMP", "Lamp", ""),
-               ("ARMATURE", "Armature", ""),
-               ("MESH", "Mesh", ""),
-               ("CURVE", "Curve", ""),
-               ),
-        default={"EMPTY", "CAMERA", "LAMP", "ARMATURE", "MESH", "CURVE"},
-        )
+	# List of operator properties, the attributes will be assigned
+	# to the class instance from the operator settings before calling
+	object_types : EnumProperty(
+		name="Object Types",
+		options={"ENUM_FLAG"},
+		items=(("EMPTY", "Empties", ""),
+			   ("CAMERA", "Cameras", ""),
+			   ("LAMP", "Lights", ""),
+			   ("ARMATURE", "Armatures", ""),
+			   ("MESH", "Meshes", ""),
+			   ("CURVE", "Curves", ""),
+			   ),
+		default={"EMPTY", "CAMERA", "LAMP", "ARMATURE", "MESH", "CURVE"},
+		)
 
-    use_export_selected : BoolProperty(
-        name="Selected Objects",
-        description="Export only selected objects (and visible in active "
-                    "layers if that applies).",
-        default=False,
-        )
-    use_mesh_modifiers : BoolProperty(
-        name="Apply Modifiers",
-        description="Apply modifiers to mesh objects (on a copy!).",
-        default=False,
-        )
-    use_exclude_armature_modifier : BoolProperty(
-        name="Exclude Armature Modifier",
-        description="Exclude the armature modifier when applying modifiers "
-                      "(otherwise animation will be applied on top of the last pose)",
-        default=True,
-        )
-    use_tangent_arrays : BoolProperty(
-        name="Tangent Arrays",
-        description="Export Tangent and Binormal arrays "
-                    "(for normalmapping).",
-        default=False,
-        )
-    use_triangles : BoolProperty(
-        name="Triangulate",
-        description="Export Triangles instead of Polygons.",
-        default=True,
-        )
-
-    use_copy_images : BoolProperty(
-        name="Copy Images",
-        description="Copy Images (create images/ subfolder)",
-        default=True,
-        )
-    use_active_layers : BoolProperty(
-        name="Active Layers",
-        description="Export only objects on the active layers.",
-        default=True,
-        )
-    use_exclude_ctrl_bones : BoolProperty(
-        name="Exclude Control Bones",
-        description=("Exclude skeleton bones with names beginning with 'ctrl' "
-                     "or bones which are not marked as Deform bones."),
-        default=True,
-        )
-    use_anim : BoolProperty(
-        name="Export Animation",
-        description="Export keyframe animation",
-        default=True,
-        )
-    use_anim_action_all : BoolProperty(
-        name="All Actions",
-        description=("Export all actions for the first armature found "
-                     "in separate DAE files"),
-        default=False,
-        )
-    use_anim_skip_noexp : BoolProperty(
-        name="Skip (-noexp) Actions",
-        description="Skip exporting of actions whose name end in (-noexp)."
-                    " Useful to skip control animations.",
-        default=True,
-        )
-    use_anim_optimize : BoolProperty(
-        name="Optimize Keyframes",
-        description="Remove double keyframes",
-        default=True,
-        )
-
-    use_shape_key_export : BoolProperty(
-        name="Shape Keys",
-        description="Export shape keys for selected objects.",
-        default=False,
-        )
+	use_export_selected : BoolProperty(
+		name="Selected Objects",
+		description="Export only selected objects "
+			"(and visible in active layers if that applies).",
+		default=False,
+		)
 		
-    anim_optimize_precision : FloatProperty(
-        name="Precision",
-        description=("Tolerence for comparing double keyframes "
-                     "(higher for greater accuracy)"),
-        min=1, max=16,
-        soft_min=1, soft_max=16,
-        default=6.0,
-        )
+	use_export_visible : BoolProperty(
+		name="Visible Only",
+		description="Export only objects that are visible in viewport.",
+		default=True,
+		)
+		
+	use_active_layers : BoolProperty(
+		name="Active Layers",
+		description="Export only objects on the active layers.",
+		default=False,
+		)
+		
+	use_mesh_modifiers : BoolProperty(
+		name="Apply Modifiers",
+		description="Apply modifiers to mesh objects (on a copy!).",
+		default=False,
+		)
+		
+	use_exclude_armature_modifier : BoolProperty(
+		name="Exclude Armature Modifier",
+		description="Exclude the armature modifier when applying modifiers "
+					  "(otherwise animation will be applied on top of the last pose)",
+		default=True,
+		)
+		
+	use_triangles : BoolProperty(
+		name="Triangulate",
+		description="Export Triangles instead of Polygons.",
+		default=True,
+		)
+	
+	use_tangent_arrays : BoolProperty(
+		name="Tangent Arrays",
+		description="Export Tangent and Binormal arrays "
+					"(for normalmapping).",
+		default=False,
+		)
+	
+	use_copy_images : BoolProperty(
+		name="Copy Medias",
+		description="Copy images and other medias next to DAE file (ie : creates Textures/ subfolder)",
+		default=True,
+		)
 
-    use_metadata = BoolProperty(
-        name="Use Metadata",
-        default=True,
-        options={"HIDDEN"},
-        )
+	use_exclude_ctrl_bones : BoolProperty(
+		name="Exclude Control Bones",
+		description=("Exclude skeleton bones with names beginning with 'ctrl' "
+					 "or bones which are not marked as Deform bones."),
+		default=True,
+		)
+		
+	use_anim : BoolProperty(
+		name="Export Animation",
+		description="Export keyframe animation",
+		default=True,
+		)
+		
+	use_anim_optimize : BoolProperty(
+		name="Optimize Keyframes",
+		description="Remove double keyframes",
+		default=True,
+		)
+		
+	use_anim_action_all : BoolProperty(
+		name="All Actions",
+		description=("Export all actions for the first armature found "
+					 "in separate DAE files"),
+		default=False,
+		)
+		
+	use_anim_skip_noexp : BoolProperty(
+		name="Skip (-noexp) Actions",
+		description="Skip exporting of actions whose name end in (-noexp)."
+					" Useful to skip control animations.",
+		default=True,
+		)
+		
+	use_anim_optimize : BoolProperty(
+		name="Optimize Keyframes",
+		description="Remove double keyframes",
+		default=True,
+		)
 
-    @property
-    def check_extension(self):
-        return True
+	use_shape_key_export : BoolProperty(
+		name="Shape Keys",
+		description="Export shape keys for selected objects.",
+		default=False,
+		)
+		
+	anim_optimize_precision : FloatProperty(
+		name="Precision",
+		description=("Tolerence for comparing double keyframes "
+					 "(higher for greater accuracy)"),
+		min=1, max=16,
+		soft_min=1, soft_max=16,
+		default=6.0,
+		)
 
-    def execute(self, context):
-        if not self.filepath:
-            raise Exception("filepath not set")
+	use_metadata = BoolProperty(
+		name="Use Metadata",
+		default=True,
+		options={"HIDDEN"},
+		)
 
-        keywords = self.as_keywords(ignore=("axis_forward",
-                                            "axis_up",
-                                            "global_scale",
-                                            "check_existing",
-                                            "filter_glob",
-                                            "xna_validate",
-                                            ))
+	@property
+	def check_extension(self):
+		return True
 
-        from . import export_dae
-        return export_dae.save(self, context, **keywords)
+	def execute(self, context):
+		if not self.filepath:
+			raise Exception("filepath not set")
+
+		keywords = self.as_keywords(ignore=("axis_forward",
+											"axis_up",
+											"global_scale",
+											"check_existing",
+											"filter_glob",
+											"xna_validate",
+											))
+
+		from . import export_dae
+		return export_dae.save(self, context, **keywords)
 
 
 def menu_func(self, context):
-    self.layout.operator(CE_OT_export_dae.bl_idname, text="SMG Better Collada (.dae)")
+	self.layout.operator(CE_OT_export_dae.bl_idname, text="SMG Better Collada (.dae)")
 
 	
 #classes = (CE_OT_export_dae)
@@ -196,4 +218,4 @@ def unregister():
 	bpy.types.TOPBAR_MT_file_export.remove(menu_func)
 
 if __name__ == "__main__":
-    register()
+	register()
