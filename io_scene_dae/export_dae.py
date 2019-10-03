@@ -97,7 +97,7 @@ def strarr(arr):
 	return s
 
 def rgba_to_rgb(rgba):
-    return Color((rgba[0], rgba[1], rgba[2]))
+		return Color((rgba[0], rgba[1], rgba[2]))
 
 class DaeExporter:
 
@@ -175,7 +175,7 @@ class DaeExporter:
 		imgpath = image.filepath
 		if imgpath.startswith("//"):
 			imgpath = bpy.path.abspath(imgpath)
-			print("exporting image path", imgpath)
+			#print("exporting image path", imgpath)
 		if (self.config["use_copy_images"]):
 			basedir = os.path.join(os.path.dirname(self.path), "Textures")
 			if (not os.path.isdir(basedir)):
@@ -284,6 +284,9 @@ class DaeExporter:
 			
 			normalmap_texture = principledBSDF.normalmap_texture
 			normalmap_texture_sampler = self.export_sampler(normalmap_texture)
+			
+			alpha_texture = principledBSDF.alpha_texture
+			alpha_texture_sampler = self.export_sampler(alpha_texture)
 		
 		
 		
@@ -346,9 +349,14 @@ class DaeExporter:
 
 
 			if material.blend_method != 'OPAQUE':
-				self.writel(S_FX, 5, "<transparency>")
-				self.writel(S_FX, 6, "<float>{}</float>".format(principledBSDF.alpha))
-				self.writel(S_FX, 5, "</transparency>")
+				if alpha_texture and alpha_texture.image:
+					self.writel(S_FX, 5, "<transparent>")
+					self.writel(S_FX, 6, "<texture texture=\"{}\" texcoord=\"CHANNEL1\"/>".format(alpha_texture_sampler))
+					self.writel(S_FX, 5, "</transparent>")
+				else:
+					self.writel(S_FX, 5, "<transparency>")
+					self.writel(S_FX, 6, "<float>{}</float>".format(principledBSDF.alpha))
+					self.writel(S_FX, 5, "</transparency>")
 			
 			self.writel(S_FX, 5, "<index_of_refraction>")
 			self.writel(S_FX, 6, "<float>{}</float>".format(principledBSDF.ior))
@@ -1358,8 +1366,10 @@ class DaeExporter:
 		bpy.context.view_layer.objects.active = prev_node
 
 	def is_node_valid(self, node):
-		if (node.type not in self.config["object_types"]):
-			return False
+		
+		if (node.type not in self.config["object_types"]): return False
+		if (self.config["use_export_selected"] and not node.select_get()): return False
+		if (self.config["use_export_visible"] and node.hide_get()): return False
 
 		if (self.config["use_active_layers"]):
 			valid = True
@@ -1375,11 +1385,7 @@ class DaeExporter:
 					valid = False
 					break
 					
-			if (not valid):
-				return False
-
-		if (self.config["use_export_selected"] and not node.select_get()):
-			return False
+			if (not valid): return False
 
 		return True
 
@@ -1407,7 +1413,7 @@ class DaeExporter:
 	def export_asset(self):
 		self.writel(S_ASSET, 0, "<asset>")
 		self.writel(S_ASSET, 1, "<contributor>")
-		author = "Anonymous"#bpy.context.preferences.system.author seems to be removed from Blender 2.8
+		author = "Unknown"#bpy.context.preferences.system.author seems to be removed from Blender 2.8
 		self.writel(S_ASSET, 2, "<author>{}</author>".format(author))
 		self.writel(S_ASSET, 2, "<authoring_tool>SMG Better Collada Exporter for Blender 2.8+, by Juan Linietsky, Artell and Samuel Tranchet from Sigmagine (contact@sigmagine.com)</authoring_tool>")
 		self.writel(S_ASSET, 1, "</contributor>")
