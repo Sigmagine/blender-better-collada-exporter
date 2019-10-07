@@ -39,17 +39,21 @@ from bpy_extras.node_shader_utils import ShaderImageTextureWrapper
 # According to collada spec, order matters
 S_ASSET = 0
 S_IMGS = 1
-S_FX = 2
-S_MATS = 3
-S_GEOM = 4
-S_MORPH = 5
-S_SKIN = 6
-S_CONT = 7
-S_CAMS = 8
-S_LAMPS = 9
-S_ANIM_CLIPS = 10
-S_NODES = 11
-S_ANIM = 12
+S_AUDS = 2
+S_FX = 3
+S_MATS = 4
+S_GEOM = 5
+S_MORPH = 6
+S_SKIN = 7
+S_CONT = 8
+S_CAMS = 9
+S_LAMPS = 10
+S_SNDS = 11
+S_AOBJS = 12
+S_ANIM_CLIPS = 13
+S_NODES = 14
+S_ASCN = 15
+S_ANIM = 16
 
 CMP_EPSILON = 0.0001
 
@@ -176,7 +180,7 @@ class DaeExporter:
 		if imgpath.startswith("//"):
 			imgpath = bpy.path.abspath(imgpath)
 			#print("exporting image path", imgpath)
-		if (self.config["use_copy_images"]):
+		if (self.config["use_copy_medias"]):
 			basedir = os.path.join(os.path.dirname(self.path), "Textures")
 			if (not os.path.isdir(basedir)):
 				os.makedirs(basedir)
@@ -218,6 +222,57 @@ class DaeExporter:
 		self.image_cache[image] = imgid
 		return imgid
 		
+		
+	def export_audio_source(self, audio_source):
+		audio_source_id = self.audio_source_cache.get(audio_source)
+		if audio_source_id:
+			return audio_source_id
+
+		audio_sourcepath = audio_source.filepath
+		if audio_sourcepath.startswith("//"):
+			audio_sourcepath = bpy.path.abspath(audio_sourcepath)
+			#print("exporting image path", imgpath)
+		if (self.config["use_copy_medias"]):
+			basedir = os.path.join(os.path.dirname(self.path), "Audio")
+			if (not os.path.isdir(basedir)):
+				os.makedirs(basedir)
+
+			if os.path.isfile(audio_sourcepath):
+				dstfile = os.path.join(basedir, os.path.basename(audio_sourcepath))
+
+				if not os.path.isfile(dstfile):
+					shutil.copy(audio_sourcepath, dstfile)
+				audio_sourcepath = os.path.join("Audio", os.path.basename(audio_sourcepath))
+			else:
+				audio_source_tmp_path = audio_source.filepath
+				if img_tmp_path.lower().endswith(tuple(bpy.path.extensions_audio_source)):
+					audio_source.filepath = os.path.join(basedir, os.path.basename(audio_source_tmp_path))
+				else:
+					audio_source.filepath = os.path.join(basedir, "{}.wav".format(audio_source.name))
+
+				dstfile = os.path.join(basedir, os.path.basename(audio_source.filepath))
+
+				if not os.path.isfile(dstfile):
+					audio_source.save()
+				audio_sourcepath = os.path.join("Audio", os.path.basename(audio_source.filepath))
+				audio_source.filepath = audio_source_tmp_path
+
+		else:
+			try:
+				audio_sourcepath = os.path.relpath(audio_sourcepath, os.path.dirname(self.path)).replace("\\", "/")
+			except:
+				# TODO: Review, not sure why it fails
+				pass
+
+		audio_sourceid = self.new_id("audio-source")
+
+		print("FOR: {}".format(audio_sourcepath))
+
+		self.writel(S_AUDS, 1, "<audio_source id=\"{}\" name=\"{}\">".format(audio_sourceid, audio_source.name))
+		self.writel(S_AUDS, 2, "<init_from>{}</init_from>".format(audio_sourcepath))
+		self.writel(S_AUDS, 1, "</audio_source>")
+		self.audio_source_cache[audio_source] = audio_sourceid
+		return audio_sourceid
 		
 	def export_sampler(self, tex) :
 	
@@ -707,12 +762,12 @@ class DaeExporter:
 		self.writel(S_GEOM, 4, "<float_array id=\"{}-positions-array\" "
 			"count=\"{}\">{}</float_array>".format(meshid, len(vertices) * 3, float_values))
 		self.writel(S_GEOM, 4, "<technique_common>")
-		self.writel(S_GEOM, 4, "<accessor source=\"#{}-positions-array\" "
+		self.writel(S_GEOM, 5, "<accessor source=\"#{}-positions-array\" "
 			"count=\"{}\" stride=\"3\">".format(meshid, len(vertices)))
-		self.writel(S_GEOM, 5, "<param name=\"X\" type=\"float\"/>")
-		self.writel(S_GEOM, 5, "<param name=\"Y\" type=\"float\"/>")
-		self.writel(S_GEOM, 5, "<param name=\"Z\" type=\"float\"/>")
-		self.writel(S_GEOM, 4, "</accessor>")
+		self.writel(S_GEOM, 6, "<param name=\"X\" type=\"float\"/>")
+		self.writel(S_GEOM, 6, "<param name=\"Y\" type=\"float\"/>")
+		self.writel(S_GEOM, 6, "<param name=\"Z\" type=\"float\"/>")
+		self.writel(S_GEOM, 5, "</accessor>")
 		self.writel(S_GEOM, 4, "</technique_common>")
 		self.writel(S_GEOM, 3, "</source>")
 
@@ -724,12 +779,12 @@ class DaeExporter:
 		self.writel(S_GEOM, 4, "<float_array id=\"{}-normals-array\" "
 			"count=\"{}\">{}</float_array>".format(meshid, len(vertices) * 3, float_values))
 		self.writel(S_GEOM, 4, "<technique_common>")
-		self.writel(S_GEOM, 4, "<accessor source=\"#{}-normals-array\" count=\"{}\" "
+		self.writel(S_GEOM, 5, "<accessor source=\"#{}-normals-array\" count=\"{}\" "
 			"stride=\"3\">".format(meshid, len(vertices)))
-		self.writel(S_GEOM, 5, "<param name=\"X\" type=\"float\"/>")
-		self.writel(S_GEOM, 5, "<param name=\"Y\" type=\"float\"/>")
-		self.writel(S_GEOM, 5, "<param name=\"Z\" type=\"float\"/>")
-		self.writel(S_GEOM, 4, "</accessor>")
+		self.writel(S_GEOM, 6, "<param name=\"X\" type=\"float\"/>")
+		self.writel(S_GEOM, 6, "<param name=\"Y\" type=\"float\"/>")
+		self.writel(S_GEOM, 6, "<param name=\"Z\" type=\"float\"/>")
+		self.writel(S_GEOM, 5, "</accessor>")
 		self.writel(S_GEOM, 4, "</technique_common>")
 		self.writel(S_GEOM, 3, "</source>")
 
@@ -741,12 +796,12 @@ class DaeExporter:
 			self.writel(S_GEOM, 4, "<float_array id=\"{}-tangents-array\" "
 				"count=\"{}\">{}</float_array>".format(meshid, len(vertices) * 3, float_values))
 			self.writel(S_GEOM, 4, "<technique_common>")
-			self.writel(S_GEOM, 4, "<accessor source=\"#{}-tangents-array\" "
+			self.writel(S_GEOM, 5, "<accessor source=\"#{}-tangents-array\" "
 				"count=\"{}\" stride=\"3\">".format(meshid, len(vertices)))
-			self.writel(S_GEOM, 5, "<param name=\"X\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Y\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Z\" type=\"float\"/>")
-			self.writel(S_GEOM, 4, "</accessor>")
+			self.writel(S_GEOM, 6, "<param name=\"X\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Y\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Z\" type=\"float\"/>")
+			self.writel(S_GEOM, 5, "</accessor>")
 			self.writel(S_GEOM, 4, "</technique_common>")
 			self.writel(S_GEOM, 3, "</source>")
 
@@ -757,12 +812,12 @@ class DaeExporter:
 			self.writel(S_GEOM, 4, "<float_array id=\"{}-bitangents-array\" "
 				"count=\"{}\">{}</float_array>".format(meshid, len(vertices) * 3, float_values))
 			self.writel(S_GEOM, 4, "<technique_common>")
-			self.writel(S_GEOM, 4, "<accessor source=\"#{}-bitangents-array\" "
+			self.writel(S_GEOM, 5, "<accessor source=\"#{}-bitangents-array\" "
 				"count=\"{}\" stride=\"3\">".format(meshid, len(vertices)))
-			self.writel(S_GEOM, 5, "<param name=\"X\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Y\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Z\" type=\"float\"/>")
-			self.writel(S_GEOM, 4, "</accessor>")
+			self.writel(S_GEOM, 6, "<param name=\"X\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Y\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Z\" type=\"float\"/>")
+			self.writel(S_GEOM, 5, "</accessor>")
 			self.writel(S_GEOM, 4, "</technique_common>")
 			self.writel(S_GEOM, 3, "</source>")
 
@@ -780,11 +835,11 @@ class DaeExporter:
 			self.writel(S_GEOM, 4, "<float_array id=\"{}-texcoord-{}-array\" "
 				"count=\"{}\">{}</float_array>".format(meshid, uvi, len(vertices) * 2, float_values))
 			self.writel(S_GEOM, 4, "<technique_common>")
-			self.writel(S_GEOM, 4, "<accessor source=\"#{}-texcoord-{}-array\" "
+			self.writel(S_GEOM, 5, "<accessor source=\"#{}-texcoord-{}-array\" "
 				"count=\"{}\" stride=\"2\">".format(meshid, uvi, len(vertices)))
-			self.writel(S_GEOM, 5, "<param name=\"S\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"T\" type=\"float\"/>")
-			self.writel(S_GEOM, 4, "</accessor>")
+			self.writel(S_GEOM, 6, "<param name=\"S\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"T\" type=\"float\"/>")
+			self.writel(S_GEOM, 5, "</accessor>")
 			self.writel(S_GEOM, 4, "</technique_common>")
 			self.writel(S_GEOM, 3, "</source>")
 
@@ -797,12 +852,12 @@ class DaeExporter:
 			self.writel(S_GEOM, 4, "<float_array id=\"{}-colors-array\" "
 				"count=\"{}\">{}</float_array>".format(meshid, len(vertices) * 3, float_values))
 			self.writel(S_GEOM, 4, "<technique_common>")
-			self.writel(S_GEOM, 4, "<accessor source=\"#{}-colors-array\" "
+			self.writel(S_GEOM, 5, "<accessor source=\"#{}-colors-array\" "
 				"count=\"{}\" stride=\"3\">".format(meshid, len(vertices)))
-			self.writel(S_GEOM, 5, "<param name=\"X\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Y\" type=\"float\"/>")
-			self.writel(S_GEOM, 5, "<param name=\"Z\" type=\"float\"/>")
-			self.writel(S_GEOM, 4, "</accessor>")
+			self.writel(S_GEOM, 6, "<param name=\"X\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Y\" type=\"float\"/>")
+			self.writel(S_GEOM, 6, "<param name=\"Z\" type=\"float\"/>")
+			self.writel(S_GEOM, 5, "</accessor>")
 			self.writel(S_GEOM, 4, "</technique_common>")
 			self.writel(S_GEOM, 3, "</source>")
 
@@ -893,10 +948,10 @@ class DaeExporter:
 			self.writel(S_SKIN, 4, "<Name_array id=\"{}-joints-array\" "
 				"count=\"{}\">{}</Name_array>".format(contid, len(si["bone_names"]), name_values))
 			self.writel(S_SKIN, 4, "<technique_common>")
-			self.writel(S_SKIN, 4, "<accessor source=\"#{}-joints-array\" "
+			self.writel(S_SKIN, 5, "<accessor source=\"#{}-joints-array\" "
 				"count=\"{}\" stride=\"1\">".format(contid, len(si["bone_names"])))
-			self.writel(S_SKIN, 5, "<param name=\"JOINT\" type=\"Name\"/>")
-			self.writel(S_SKIN, 4, "</accessor>")
+			self.writel(S_SKIN, 6, "<param name=\"JOINT\" type=\"Name\"/>")
+			self.writel(S_SKIN, 5, "</accessor>")
 			self.writel(S_SKIN, 4, "</technique_common>")
 			self.writel(S_SKIN, 3, "</source>")
 			# Pose Matrices!
@@ -908,10 +963,10 @@ class DaeExporter:
 			self.writel(S_SKIN, 4, "<float_array id=\"{}-bind_poses-array\" "
 				"count=\"{}\">{}</float_array>".format(contid, len(si["bone_bind_poses"]) * 16, pose_values))
 			self.writel(S_SKIN, 4, "<technique_common>")
-			self.writel(S_SKIN, 4, "<accessor source=\"#{}-bind_poses-array\" "
+			self.writel(S_SKIN, 5, "<accessor source=\"#{}-bind_poses-array\" "
 				"count=\"{}\" stride=\"16\">".format(contid, len(si["bone_bind_poses"])))
-			self.writel(S_SKIN, 5, "<param name=\"TRANSFORM\" type=\"float4x4\"/>")
-			self.writel(S_SKIN, 4, "</accessor>")
+			self.writel(S_SKIN, 6, "<param name=\"TRANSFORM\" type=\"float4x4\"/>")
+			self.writel(S_SKIN, 5, "</accessor>")
 			self.writel(S_SKIN, 4, "</technique_common>")
 			self.writel(S_SKIN, 3, "</source>")
 			# Skin Weights!
@@ -926,10 +981,10 @@ class DaeExporter:
 			self.writel(S_SKIN, 4, "<float_array id=\"{}-skin_weights-array\" "
 				"count=\"{}\">{}</float_array>".format(contid, skin_weights_total, skin_weights))
 			self.writel(S_SKIN, 4, "<technique_common>")
-			self.writel(S_SKIN, 4, "<accessor source=\"#{}-skin_weights-array\" "
+			self.writel(S_SKIN, 5, "<accessor source=\"#{}-skin_weights-array\" "
 				"count=\"{}\" stride=\"1\">".format(contid, skin_weights_total))
-			self.writel(S_SKIN, 5, "<param name=\"WEIGHT\" type=\"float\"/>")
-			self.writel(S_SKIN, 4, "</accessor>")
+			self.writel(S_SKIN, 6, "<param name=\"WEIGHT\" type=\"float\"/>")
+			self.writel(S_SKIN, 5, "</accessor>")
 			self.writel(S_SKIN, 4, "</technique_common>")
 			self.writel(S_SKIN, 3, "</source>")
 
@@ -1135,10 +1190,33 @@ class DaeExporter:
 		self.writel(S_CAMS, 1, "</camera>")
 
 		self.writel(S_NODES, il, "<instance_camera url=\"#{}\"/>".format(camid))
+		
+		
+	def export_speaker_node(self, node, node_id, il):
+	
+		if (node.data is None): return
+		
+		speaker = node.data
+		
+		audio_source = speaker.sound
+		audioSourceid = self.export_audio_source(audio_source)
+
+		
+		soundid = self.new_id("sound")
+		self.writel(S_SNDS, 1, "<sound id=\"{}\" name=\"{}\">".format(soundid, audio_source.name))
+		self.writel(S_SNDS, 2, "<instance_audio_source url=\"#{}\" />".format(audioSourceid))
+		self.writel(S_SNDS, 1, "</sound>")
+		
+		self.writel(S_AOBJS, 1, "<audio_object id=\"{}-audio\" name=\"{}\">".format(node_id, audio_source.name))
+		self.writel(S_AOBJS, 2, "<instance_sound url=\"#{}\"/>".format(soundid))
+		self.writel(S_AOBJS, 1, "</audio_object>")
+		
+		self.writel(S_ASCN, 2, "<instance_audio_object url=\"#{}-audio\" parent=\"#{}\" />".format(node_id, node_id))
+		
 
 	def export_lamp_node(self, node, il):
-		if (node.data is None):
-			return
+	
+		if (node.data is None): return
 
 		light = node.data
 		lightid = self.new_id("light")
@@ -1326,8 +1404,8 @@ class DaeExporter:
 		return splineid
 
 	def export_curve_node(self, node, il):
-		if (node.data is None):
-			return
+	
+		if (node.data is None): return
 
 		curveid = self.export_curve(node.data)
 
@@ -1335,13 +1413,15 @@ class DaeExporter:
 		self.writel(S_NODES, il, "</instance_geometry>")
 
 	def export_node(self, node, il):
-		if (node not in self.valid_nodes):
-			return
+	
+		if (node not in self.valid_nodes): return
 
 		prev_node = bpy.context.view_layer.objects.active
 		bpy.context.view_layer.objects.active = node
+		
+		node_id = self.validate_id(node.name)
 
-		self.writel(S_NODES, il, "<node id=\"{}\" name=\"{}\" type=\"NODE\">".format(self.validate_id(node.name), node.name))
+		self.writel(S_NODES, il, "<node id=\"{}\" name=\"{}\" type=\"NODE\">".format(node_id, node.name))
 		il += 1
 
 		self.writel(S_NODES, il, "<matrix sid=\"transform\">{}</matrix>".format(strmtx(node.matrix_local)))
@@ -1355,6 +1435,8 @@ class DaeExporter:
 			self.export_camera_node(node, il)
 		elif (node.type == "LAMP"):
 			self.export_lamp_node(node, il)
+		elif (node.type == "SPEAKER"):
+			self.export_speaker_node(node, node_id, il)
 		elif (node.type == "EMPTY"):
 			self.export_empty_node(node, il)
 
@@ -1390,8 +1472,13 @@ class DaeExporter:
 		return True
 
 	def export_scene(self):
+
 		self.writel(S_NODES, 0, "<library_visual_scenes>")
 		self.writel(S_NODES, 1, "<visual_scene id=\"{}\" name=\"scene\">".format(self.scene_name))
+		
+		if ("SPEAKER" in self.config["object_types"]):
+			self.writel(S_ASCN, 0, "<library_audio_scenes>")
+			self.writel(S_ASCN, 1, "<audio_scene id=\"{}\" name=\"scene\">".format(self.scene_name))
 
 		for obj in self.scene.objects:
 			if (obj in self.valid_nodes):
@@ -1409,6 +1496,10 @@ class DaeExporter:
 
 		self.writel(S_NODES, 1, "</visual_scene>")
 		self.writel(S_NODES, 0, "</library_visual_scenes>")
+		
+		if ("SPEAKER" in self.config["object_types"]):
+			self.writel(S_ASCN, 1, "</audio_scene>")
+			self.writel(S_ASCN, 0, "</library_audio_scenes>")
 
 	def export_asset(self):
 		self.writel(S_ASSET, 0, "<asset>")
@@ -1709,13 +1800,16 @@ class DaeExporter:
 		self.writel(S_ANIM, 0, "</library_animations>")
 
 	def export(self):
-		self.writel(S_GEOM, 0, "<library_geometries>")
-		self.writel(S_CONT, 0, "<library_controllers>")
-		self.writel(S_CAMS, 0, "<library_cameras>")
+		self.writel(S_GEOM,  0, "<library_geometries>")
+		self.writel(S_CONT,  0, "<library_controllers>")
+		self.writel(S_CAMS,  0, "<library_cameras>")
 		self.writel(S_LAMPS, 0, "<library_lights>")
-		self.writel(S_IMGS, 0, "<library_images>")
-		self.writel(S_MATS, 0, "<library_materials>")
-		self.writel(S_FX, 0, "<library_effects>")
+		self.writel(S_IMGS,  0, "<library_images>")
+		self.writel(S_AUDS,  0, "<library_audio_sources>")
+		self.writel(S_SNDS,  0, "<library_sounds>")
+		self.writel(S_AOBJS, 0, "<library_audio_objects>")
+		self.writel(S_MATS,  0, "<library_materials>")
+		self.writel(S_FX,    0, "<library_effects>")
 
 		self.export_asset()
 		self.export_scene()
@@ -1733,12 +1827,15 @@ class DaeExporter:
 				self.writel(S_CONT, 0, l)
 			del self.sections[S_SKIN]
 
-		self.writel(S_CONT, 0, "</library_controllers>")
-		self.writel(S_CAMS, 0, "</library_cameras>")
+		self.writel(S_CONT,  0, "</library_controllers>")
+		self.writel(S_CAMS,  0, "</library_cameras>")
 		self.writel(S_LAMPS, 0, "</library_lights>")
-		self.writel(S_IMGS, 0, "</library_images>")
-		self.writel(S_MATS, 0, "</library_materials>")
-		self.writel(S_FX, 0, "</library_effects>")
+		self.writel(S_IMGS,  0, "</library_images>")
+		self.writel(S_AOBJS, 0, "</library_audio_objects>")
+		self.writel(S_SNDS,  0, "</library_sounds>")
+		self.writel(S_AUDS,  0, "</library_audio_sources>")
+		self.writel(S_MATS,  0, "</library_materials>")
+		self.writel(S_FX,    0, "</library_effects>")
 
 		self.purge_empty_nodes()
 
@@ -1764,11 +1861,13 @@ class DaeExporter:
 
 		f.write(bytes("<scene>\n", "UTF-8"))
 		f.write(bytes("\t<instance_visual_scene url=\"#{}\" />\n".format(self.scene_name), "UTF-8"))
+		if ("SPEAKER" in self.config["object_types"]):
+			f.write(bytes("\t<instance_audio_scene url=\"#{}\" />\n".format(self.scene_name), "UTF-8"))
 		f.write(bytes("</scene>\n", "UTF-8"))
 		f.write(bytes("</COLLADA>\n", "UTF-8"))
 		return True
 
-	__slots__ = ("operator", "scene", "last_id", "scene_name", "sections", "path", "mesh_cache", "curve_cache", "material_cache", "image_cache", "skeleton_info", "config", "valid_nodes", "armature_for_morph", "used_bones", "wrongvtx_report", "skeletons", "action_constraints", "temp_meshes")
+	__slots__ = ("operator", "scene", "last_id", "scene_name", "sections", "path", "mesh_cache", "curve_cache", "material_cache", "image_cache","audio_source_cache", "skeleton_info", "config", "valid_nodes", "armature_for_morph", "used_bones", "wrongvtx_report", "skeletons", "action_constraints", "temp_meshes")
 
 	def __init__(self, path, kwargs, operator):
 		self.operator = operator
@@ -1782,6 +1881,7 @@ class DaeExporter:
 		self.curve_cache = {}
 		self.material_cache = {}
 		self.image_cache = {}
+		self.audio_source_cache = {}
 		self.skeleton_info = {}
 		self.config = kwargs
 		self.valid_nodes = []

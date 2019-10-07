@@ -22,7 +22,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "SMG Better Collada Exporter",
     "author": "Juan Linietsky, artell, Samuel Tranchet from Sigmagine",
-	"version": (1, 10, 11),
+	"version": (2, 0, 115),
     "blender": (2, 80, 0),
     "api": 38691,
     "location": "File > Import-Export",
@@ -54,14 +54,15 @@ class CE_OT_export_dae(bpy.types.Operator, ExportHelper):
 	object_types : EnumProperty(
 		name="Object Types",
 		options={"ENUM_FLAG"},
-		items=(("EMPTY", "Empties", ""),
-			   ("CAMERA", "Cameras", ""),
-			   ("LAMP", "Lights", ""),
-			   ("ARMATURE", "Armatures", ""),
-			   ("MESH", "Meshes", ""),
-			   ("CURVE", "Curves", ""),
+		items=(("MESH", "Meshes", ""),
+				("EMPTY", "Empties", ""),
+				("CAMERA", "Cameras", ""),
+				("LAMP", "Lights", ""),
+				("SPEAKER", "Speakers", ""),
+				("ARMATURE", "Armatures", ""),
+				("CURVE", "Curves", ""),
 			   ),
-		default={"EMPTY", "CAMERA", "LAMP", "ARMATURE", "MESH", "CURVE"},
+		default={"MESH", "EMPTY","CAMERA", "LAMP","SPEAKER", "ARMATURE",  "CURVE"},
 		)
 
 	use_export_selected : BoolProperty(
@@ -109,7 +110,7 @@ class CE_OT_export_dae(bpy.types.Operator, ExportHelper):
 		default=False,
 		)
 	
-	use_copy_images : BoolProperty(
+	use_copy_medias : BoolProperty(
 		name="Copy Medias",
 		description="Copy images and other medias next to DAE file (ie : creates Textures/ subfolder)",
 		default=True,

@@ -1,5 +1,7 @@
 # SMG Better Collada Exporter for Blender
 
+Version 2.00 (build 115)
+
 Enhanced Collada exporter for [Blender](https://www.blender.org), making the
 format viable for importing meshes into game engines using a libre format.
 
@@ -7,15 +9,18 @@ Forked from original [Godot Engine's "Better" Collada exporter](https://github.c
 This version is not intended to create Collada (.dae) files optimized for the Godot Engine, it is more generic.
 Some choices will be made in order to standardize the rendering as much as possible in the various 3D software and engines where DAE files will be used.
 
+
 ## Features
 
 Same original features as "Better" Collada exporter with some modifications :
 
+
 ### General features
 
 - Compatible with Blender 2.8+ (Thanks to [Artell's](https://github.com/artellblender/collada-exporter-2.8) work)
-- Support Principled BSDF (only)
+- Support Principled BSDF (only) shaders
 - Options to export only some objects (visible, selected, in active layer)
+
 
 ### Material features
 
@@ -27,6 +32,12 @@ Same original features as "Better" Collada exporter with some modifications :
 - Indice of refraction (value)
 - Backface culling/double sided (value)
 - Normal map (texture)
+
+
+### Audio features
+
+- Support audio speakers export based on [Shih-Han Chan COLLADA Audio format proposition](https://tel.archives-ouvertes.fr/tel-01123984/document). At the moment audio nodes export is limited to position and audio file names.
+
 
 ## Installation
 
@@ -40,8 +51,9 @@ Same original features as "Better" Collada exporter with some modifications :
 If you find bugs or want to suggest improvements, please open an issue on the
 upstream [GitHub repository](https://github.com/Sigmagine/blender-better-collada-exporter).
 
+
 ## License
 
-This Better Collada exporter is distributed under the terms of the GNU General
+This SMG Better Collada Exporter for Blender is distributed under the terms of the GNU General
 Public License, version 2 or later. See the [LICENSE.txt](/LICENSE.txt) file
 for details.
